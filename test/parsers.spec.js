@@ -5,11 +5,10 @@
 var assert = require('assert')
 var util = require('util')
 var JavascriptParser = require('../')
-var HiredisParser = require('../lib/hiredis')
 var ReplyError = JavascriptParser.ReplyError
 var ParserError = JavascriptParser.ParserError
 var RedisError = JavascriptParser.RedisError
-var parsers = [HiredisParser, JavascriptParser]
+var parsers = [JavascriptParser]
 
 // Mock the not needed return functions
 function returnReply () { throw new Error('failed') }
@@ -18,14 +17,6 @@ function returnFatalError (err) { throw err }
 
 describe('parsers', function () {
   describe('general parser functionality', function () {
-    it('backwards compatibility with hiredis', function () {
-      var parser = new JavascriptParser({
-        returnReply: returnReply,
-        returnError: returnError,
-        name: 'hiredis'
-      })
-      assert.strictEqual(parser.name, 'hiredis')
-    })
 
     it('fail for missing options argument', function () {
       assert.throws(function () {
@@ -189,9 +180,6 @@ describe('parsers', function () {
       })
 
       it('should not set the bufferOffset to a negative value', function (done) {
-        if (Parser.name === 'HiredisReplyParser') {
-          return this.skip()
-        }
         var size = 64 * 1024
         function checkReply (reply) {}
         var parser = newParser(checkReply, 'buffer')
@@ -486,14 +474,8 @@ describe('parsers', function () {
                 assert.strictEqual(reply, predefinedData[i][j])
               })
             } else if (reply[i] instanceof Error) {
-              if (Parser.name !== 'HiredisReplyParser') { // The hiredis always returns normal errors in case of nested ones
                 assert(reply[i] instanceof ReplyError)
                 assert.strictEqual(reply[i].name, predefinedData[i].name)
-              }
-              assert.strictEqual(reply[i].message, predefinedData[i].message)
-            } else {
-              assert.strictEqual(reply[i], predefinedData[i])
-            }
           }
           replyCount++
         }
@@ -641,9 +623,6 @@ describe('parsers', function () {
       })
 
       it('return numbers as strings', function () {
-        if (Parser.name === 'HiredisReplyParser') {
-          return this.skip()
-        }
         var entries = ['123', '590295810358705700002', '-99999999999999999', '4294967290', '90071992547409920', '10000040000000000000000000000000000000020']
         function checkReply (reply) {
           assert.strictEqual(typeof reply, 'string')
